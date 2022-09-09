@@ -13,34 +13,38 @@ export const Call = () => {
       <ScrollView>
         <Options />
         <Text>Call</Text>
-        {stream && (
+        {myVideo && (
           <View>
             <Text>{name || 'Você'}</Text>
             <RTCView
               /* ref={myVideo}
                */
               style={{
-                width: 200,
-                height: 200,
+                width: 400,
+                height: 400,
               }}
               mirror
               objectFit={'cover'}
-              streamURL={stream.id}
+              streamURL={myVideo.id}
               zOrder={0}
             />
           </View>
         )}
-        {/* {callAccepted && !callEnded && (
+        {userVideo && callAccepted && !callEnded && (
           <View>
             <Text>{call.name || 'Remote Stream'}</Text>
             <RTCView
+              style={{
+                width: 400,
+                height: 400,
+              }}
               mirror
               objectFit={'cover'}
-              streamURL={userVideo.current.srcObject.toURL()}
+              streamURL={userVideo.id}
               zOrder={0}
             />
           </View>
-        )} */}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

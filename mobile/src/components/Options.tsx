@@ -3,12 +3,27 @@ import React, {useContext, useState} from 'react';
 import {SocketContext} from '../contexts/SocketContext';
 
 export const Options = () => {
-  const {me, name, setName, callAccepted, callEnded, leaveCall, callUser} =
-    useContext(SocketContext);
-  const [idToCall, setIdToCall] = useState('');
+  const {
+    me,
+    name,
+    setName,
+    callAccepted,
+    callEnded,
+    leaveCall,
+    callUser,
+    answerCall,
+    call,
+  } = useContext(SocketContext);
+  const [idToCall, setIdToCall] = useState('9egSIn53QfviKWe5AABP');
 
   return (
     <View>
+      {call.isReceivedCall && !callAccepted && (
+        <View>
+          <Text>{call.name} está te chamando!</Text>
+          <Button title="Responder" onPress={answerCall} />
+        </View>
+      )}
       <View>
         <Text>ID:</Text>
         <Text>{me}</Text>

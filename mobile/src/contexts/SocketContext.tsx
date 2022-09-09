@@ -1,16 +1,21 @@
 import React, {createContext, useState, useRef, useEffect} from 'react';
 import {io} from 'socket.io-client';
-import Peer from 'simple-peer';
+import RNSimplePeer from 'react-native-simple-peer';
 import {
   mediaDevices,
   RTCPeerConnection,
   RTCIceCandidate,
   RTCSessionDescription,
 } from 'react-native-webrtc';
+import {createPeer} from '../services/WebRTC';
 
 const SocketContext = createContext();
 
 const socket = io('https://node-video-api.herokuapp.com');
+
+let myVideo = null;
+let userVideo = null;
+let connectionRef = null;
 
 const ContextProvider = ({children}) => {
   const [stream, setStream] = useState(null);
@@ -20,10 +25,6 @@ const ContextProvider = ({children}) => {
   const [callEnded, setCallEnded] = useState(false);
   const [name, setName] = useState('');
 
-  const myVideo = useRef();
-  const userVideo = useRef();
-  let connectionRef = useRef();
-
   useEffect(() => {
     mediaDevices
       .getUserMedia({
@@ -32,8 +33,7 @@ const ContextProvider = ({children}) => {
       })
       .then(currentStream => {
         setStream(currentStream);
-
-        // myVideo.current.srcObject = currentStream;
+        myVideo = currentStream;
       })
       .catch(error => console.log(error));
 
@@ -50,19 +50,17 @@ const ContextProvider = ({children}) => {
   const answerCall = () => {
     setCallAccepted(true);
 
-    const peer = new Peer({
-      initiator: false,
-      trickle: false,
-      stream,
-      wrtc: {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription},
-    });
+    const peer = createPeer({stream, initiator: false});
 
     peer.on('signal', data => {
       socket.emit('answercall', {signal: data, to: call.from});
     });
 
-    peer.on('stream', currentStream => {
-      userVideo = currentStream;
+    peer.on('stream', stream => {
+      userVideo = stream;
+      if (stream.currentTarget && stream.currentTarget._remoteStreams) {
+        userVideo = stream.currentTarget._remoteStreams[0];
+      }
     });
 
     peer.signal(call.signal);
@@ -72,12 +70,7 @@ const ContextProvider = ({children}) => {
 
   const callUser = id => {
     try {
-      const peer = new Peer({
-        initiator: true,
-        trickle: false,
-        stream,
-        wrtc: {RTCPeerConnection, RTCIceCandidate, RTCSessionDescription},
-      });
+      const peer = createPeer({stream, initiator: true});
 
       peer.on('signal', data => {
         socket.emit('calluser', {
@@ -94,7 +87,6 @@ const ContextProvider = ({children}) => {
 
       socket.on('callaccepted', signal => {
         setCallAccepted(true);
-
         peer.signal(signal);
       });
 
@@ -107,7 +99,7 @@ const ContextProvider = ({children}) => {
   const leaveCall = () => {
     setCallEnded(true);
 
-    connectionRef.destroy();
+    if (connectionRef) connectionRef.destroy();
   };
 
   return (
